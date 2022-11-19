@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
 {% block content -%}
-<p>Content here</p>
+<p>Use this app to load toots/notes from any ActivityPub server (that allows cross-site-scripting).</p>
+<p>This requires JavaScript.</p>
+
+<form method="POST" action="">
+  <input type="text" name="url" value="https://mastodon.social/@Gargron/109289006695198209">
+  <input type="submit" value="Load toot">
+</form>
 {% endblock %}

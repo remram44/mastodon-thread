@@ -5,7 +5,16 @@ edition = "2021"
 
 [dependencies]
 axum = "0.5.17"
+http = "0.2.8"
 minijinja = "0.26.0"
+percent-encoding = "2.2.0"
+
+[dependencies.serde]
+version = "1.0.147"
+features = [
+    "std",
+    "derive",
+]
 
 [dependencies.tokio]
 version = "1.22.0"
