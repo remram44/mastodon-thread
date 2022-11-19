@@ -1,0 +1,17 @@
+[package]
+name = "mastodon-thread"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.5.17"
+minijinja = "0.26.0"
+
+[dependencies.tokio]
+version = "1.22.0"
+default-features = false
+features = [
+    "rt-multi-thread",
+    "macros",
+    "net",
+]
