@@ -91,7 +91,7 @@ impl From<reqwest::Error> for Error {
 }
 
 impl From<serde_json::Error> for Error {
-    fn from(e: serde_json::Error) -> Error {
+    fn from(_: serde_json::Error) -> Error {
         Error::Other("Invalid JSON".into())
     }
 }

@@ -6,7 +6,8 @@ use super::Error;
 struct ActivityPubToot {
     id: String,
     published: String,
-    attributedTo: String,
+    #[serde(rename = "attributedTo")]
+    attributed_to: String,
     content: String,
 }
 
@@ -20,7 +21,7 @@ impl From<ActivityPubToot> for Toot {
     fn from(toot: ActivityPubToot) -> Toot {
         Toot {
             url: toot.id,
-            author: toot.attributedTo,
+            author: toot.attributed_to,
             message: toot.content,
         }
     }
