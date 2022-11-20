@@ -15,6 +15,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use get_thread::load_thread;
 
@@ -27,7 +28,9 @@ async fn main() {
     env.add_template("error.html", include_str!("templates/error.html")).unwrap();
     let env = Arc::new(env);
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::new(10, 0))
+        .build().unwrap();
 
     let app = Router::new()
         .route("/", get(form))
