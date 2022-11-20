@@ -1,5 +1,5 @@
+use async_recursion::async_recursion;
 use serde::Deserialize;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use super::Error;
@@ -11,8 +11,6 @@ struct ActivityPubToot {
     #[serde(rename = "attributedTo")]
     attributed_to: String,
     content: String,
-    #[serde(rename = "inReplyTo")]
-    in_reply_to: Option<String>,
 }
 
 pub struct Toot {
@@ -36,7 +34,7 @@ pub struct Thread {
     pub children: Vec<Arc<Mutex<Thread>>>,
 }
 
-pub async fn load_thread(client: reqwest::Client, target_url: &str) -> Result<Thread, Error> {
+pub async fn load_thread(client: reqwest::Client, target_url: &str) -> Result<Arc<Mutex<Thread>>, Error> {
     // Load the provided toot
     eprintln!("Getting toot {}", target_url);
     let res = client
@@ -50,14 +48,13 @@ pub async fn load_thread(client: reqwest::Client, target_url: &str) -> Result<Th
     // Get that first toot
     let toot: ActivityPubToot = serde_json::from_value(res.clone())?;
     let toot: Toot = toot.into();
-    let first_url = toot.url.clone();
 
     // Get the replies URL
-    let page_url = res
+    let replies_page_url = res
         .get("replies")
         .and_then(|r| r.get("first"))
         .and_then(|r| r.get("next"));
-    let mut page_url = match page_url {
+    let replies_page_url = match replies_page_url {
         Some(serde_json::Value::String(s)) => s.to_owned(),
         _ => return Err(Error::Other("Missing replies link".into())),
     };
@@ -68,15 +65,22 @@ pub async fn load_thread(client: reqwest::Client, target_url: &str) -> Result<Th
         children: Vec::new(),
     }));
 
-    // Map toot IDs to their Thread, to insert replies
-    let mut toot_map: HashMap<String, Arc<Mutex<Thread>>> = HashMap::new();
-    toot_map.insert(first_url, thread.clone());
+    load_replies(client, thread.clone(), replies_page_url).await?;
 
-    // Load the replies, which might spawn multiple pages
+    eprintln!("Done getting toot");
+    Ok(thread)
+}
+
+#[async_recursion]
+async fn load_replies(
+    client: reqwest::Client,
+    thread: Arc<Mutex<Thread>>,
+    mut replies_page_url: String,
+) -> Result<(), Error> {
     loop {
-        eprintln!("Getting page of replies {}", page_url);
+        eprintln!("Getting page of replies {}", replies_page_url);
         let mut res = client
-            .get(page_url)
+            .get(replies_page_url)
             .header(reqwest::header::ACCEPT, "application/json")
             .send()
             .await?
@@ -91,45 +95,47 @@ pub async fn load_thread(client: reqwest::Client, target_url: &str) -> Result<Th
 
         for item in items {
             eprintln!("Reading item");
-            if let serde_json::Value::String(_) = item {
-                // Skip
-                eprintln!("Is URL, skip");
-                continue;
-            }
-            let item: ActivityPubToot = serde_json::from_value(item)?;
+            let new_thread = if let serde_json::Value::String(url) = item {
+                // Load thread from toot
+                load_thread(client.clone(), &url).await?
+            } else {
+                // Get the replies URL
+                let new_replies = res
+                    .get("replies")
+                    .and_then(|r| r.get("first"))
+                    .and_then(|r| r.get("next"));
+                let new_replies = match new_replies {
+                    Some(serde_json::Value::String(s)) => Some(s.to_owned()),
+                    _ => None,
+                };
 
-            // Find parent thread
-            let mut parent_thread = thread.clone();
-            if let Some(ref parent_id) = item.in_reply_to.as_ref() {
-                let parent_id: &str = parent_id;
-                if let Some(t) = toot_map.get(parent_id) {
-                    parent_thread = t.clone();
+                let item: ActivityPubToot = serde_json::from_value(item)?;
+
+                // Create new entry
+                let new_thread = Arc::new(Mutex::new(Thread {
+                    toot: item.into(),
+                    children: Vec::new(),
+                }));
+
+                // Fill it recursively
+                if let Some(new_replies) = new_replies {
+                    load_replies(client.clone(), new_thread.clone(), new_replies).await?;
                 }
-            }
 
-            // Create new entry
-            let toot: Toot = item.into();
-            let toot_url = toot.url.clone();
-            let new_thread = Arc::new(Mutex::new(Thread {
-                toot,
-                children: Vec::new(),
-            }));
-
-            // Put it in the map
-            eprintln!("Inserting {}", toot_url);
-            toot_map.insert(toot_url, new_thread.clone());
+                new_thread
+            };
 
             // Insert into parent
-            parent_thread.lock().unwrap().children.push(new_thread);
+            thread.lock().unwrap().children.push(new_thread);
         }
 
         match res.get("next") {
-            Some(serde_json::Value::String(url)) => page_url = url.to_owned(),
+            Some(serde_json::Value::String(url)) => replies_page_url = url.to_owned(),
             _ => break,
         }
     }
 
-    eprintln!("Done getting replies");
-    drop(toot_map);
-    Ok(Arc::try_unwrap(thread).map_err(|_| "").unwrap().into_inner().unwrap())
+    eprintln!("No more pages of replies");
+
+    Ok(())
 }
