@@ -1,5 +1,5 @@
 use async_recursion::async_recursion;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 
 use super::Error;
@@ -13,6 +13,7 @@ struct ActivityPubToot {
     content: String,
 }
 
+#[derive(Serialize)]
 pub struct Toot {
     pub url: String,
     pub author: String,
@@ -29,6 +30,7 @@ impl From<ActivityPubToot> for Toot {
     }
 }
 
+#[derive(Serialize)]
 pub struct Thread {
     pub toot: Toot,
     pub children: Vec<Arc<Mutex<Thread>>>,

@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 
 {% block content -%}
-<p>Render</p>
+<ul class="thread">
+  <li class="thread"><div class="message">{{ thread.toot.message |safe }}</div><ul class="thread">
+{% for subthread in thread.children recursive %}
+  <li class="thread"><div class="message">{{ subthread.toot.message |safe }}</div><ul class="thread">
+    {{ loop(subthread.children) }}
+  </ul></li>
+{% endfor %}
+  </ul></li>
+</ul>
 {% endblock %}

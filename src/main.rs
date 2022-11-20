@@ -145,5 +145,5 @@ async fn thread(
     };
 
     let tmpl = env.get_template("thread.html").unwrap();
-    Html(tmpl.render(context!()).unwrap()).into_response()
+    Html(tmpl.render(context!(thread => thread)).unwrap()).into_response()
 }
