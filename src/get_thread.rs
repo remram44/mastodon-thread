@@ -102,7 +102,7 @@ async fn load_replies(
                 load_thread(client.clone(), &url).await?
             } else {
                 // Get the replies URL
-                let new_replies = res
+                let new_replies = item
                     .get("replies")
                     .and_then(|r| r.get("first"))
                     .and_then(|r| r.get("next"));
