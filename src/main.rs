@@ -113,12 +113,35 @@ async fn thread(
         return error(StatusCode::NOT_FOUND, "No URL provided");
     };
 
-    let thread = match load_thread(client, url).await {
-        Ok(t) => t,
-        Err(e) => return error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            &format!("{}", e),
-        ),
+    let thread = if true {
+        match load_thread(client, url).await {
+            Ok(t) => t,
+            Err(e) => return error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("{}", e),
+            ),
+        }
+    } else {
+        use get_thread::{Thread, Toot};
+        use std::sync::Mutex;
+        let t = |u: &str, a: &str, m: &str, c: Vec<Arc<Mutex<Thread>>>| { Arc::new(Mutex::new(Thread {
+            toot: Toot {
+                url: u.to_owned(),
+                author: a.to_owned(),
+                message: m.to_owned(),
+            },
+            children: c,
+        })) };
+        t("https://mastodon.social/users/austinkocher/statuses/109349270891780546", "https://mastodon.social/users/austinkocher", "<p>Evan Prodromou, who helped inspire &amp; create the <a href=\"https://mastodon.social/tags/ActivityPub\" rel=\"noopener noreferrer\">#<span>ActivityPub</span></a> protocol that makes <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> run, called this recent <a href=\"https://mastodon.social/tags/Twittermigration\" rel=\"noopener noreferrer\">#<span>Twittermigration</span></a> a “tipping point”.</p><p>“I have not been this excited about federated social networks since we published ActivityPub. The shift has started. … We’re doing this. Don’t be on the wrong side of history.” <span><a href=\"https://prodromou.pub/@evan\" rel=\"noopener noreferrer\">@<span>evan</span></a></span></p><p>Blog post here: <a href=\"https://evanp.me/2022/11/11/its-happening/?utm_source=thenewstack&amp;utm_medium=website&amp;utm_content=inline-mention&amp;utm_campaign=platform\" rel=\"noopener noreferrer\"><span>https://</span><span>evanp.me/2022/11/11/its-happen</span><span>ing/?utm_source=thenewstack&amp;utm_medium=website&amp;utm_content=inline-mention&amp;utm_campaign=platform</span></a></p>", vec![
+            t("https://fosstodon.org/users/RobLoach/statuses/109349495415864020", "https://fosstodon.org/users/RobLoach", "<p><span><a href=\"https://mastodon.social/@austinkocher\" rel=\"noopener noreferrer\">@<span>austinkocher</span></a></span> <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> <span><a href=\"https://prodromou.pub/@evan\" rel=\"noopener noreferrer\">@<span>evan</span></a></span> ItsHappening.gif</p>", vec![]),
+            t("https://mastodon.social/users/tagomago/statuses/109349852895789855", "https://mastodon.social/users/tagomago", "<p><span><a href=\"https://mastodon.social/@austinkocher\" rel=\"noopener noreferrer\">@<span>austinkocher</span></a></span> <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> <span><a href=\"https://prodromou.pub/@evan\" rel=\"noopener noreferrer\">@<span>evan</span></a></span> Pretty nice to have him back here too!!</p>", vec![]),
+            t("https://federate.social/users/maxb/statuses/109349905467831684", "https://federate.social/users/maxb", "<p><span><a href=\"https://mastodon.social/@austinkocher\" rel=\"noopener noreferrer\">@<span>austinkocher</span></a></span> <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> <span><a href=\"https://prodromou.pub/@evan\" rel=\"noopener noreferrer\">@<span>evan</span></a></span> </p><p>Hopefully we can keep it from being \"monetized\" , commercialized or weaponized (propaganda). Keep vigilant and keep up the good work.</p>", vec![]),
+            t("https://fosstodon.org/users/jvalleroy/statuses/109350111126208677", "https://fosstodon.org/users/jvalleroy", "<p><span><a href=\"https://mastodon.social/@austinkocher\" rel=\"noopener noreferrer\">@<span>austinkocher</span></a></span> <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> <span><a href=\"https://prodromou.pub/@evan\" rel=\"noopener noreferrer\">@<span>evan</span></a></span> It's official then.</p>", vec![]),
+            t("https://mas.to/users/Jakki/statuses/109350979959344823", "https://mas.to/users/Jakki", "<p><span><a href=\"https://mastodon.social/@austinkocher\" rel=\"noopener noreferrer\">@<span>austinkocher</span></a></span> <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> <span><a href=\"https://prodromou.pub/@evan\" rel=\"noopener noreferrer\">@<span>evan</span></a></span> Thats SO cute! Everyone should get to see their dreams come true. It makes life worth living🖖</p>", vec![]),
+            t("https://mastodon.star-one.org.uk/users/simon/statuses/109352823679228954", "https://mastodon.star-one.org.uk/users/simon", "<p><span><a href=\"https://prodromou.pub/@evan\" rel=\"noopener noreferrer\">@<span>evan</span></a></span> <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> <span><a href=\"https://mastodon.social/@austinkocher\" rel=\"noopener noreferrer\">@<span>austinkocher</span></a></span> <span><a href=\"https://mastodon.social/@Gargron\" rel=\"noopener noreferrer\">@<span>Gargron</span></a></span> — This is all grand (it is), and I don’t want to burst the balloon of how good it is this place is taking off, but I do feel honour-bound to mention that Usenet, FidoNet, and various other public messaging platforms from 30+ years ago also worked on the decentralised / federated / ‘nobody owns it so nobody can take it away’ principles of ActivityPub / Mastodon</p>", vec![
+                t("https://prodromou.pub/users/evan/statuses/109353682035030878", "https://prodromou.pub/users/evan", "<p><span><a href=\"https://mastodon.star-one.org.uk/@simon\" rel=\"noopener noreferrer\">@<span>simon</span></a></span> <span><a href=\"https://mastodon.social/@Mastodon\" rel=\"noopener noreferrer\">@<span>Mastodon</span></a></span> <span><a href=\"https://mastodon.social/@austinkocher\" rel=\"noopener noreferrer\">@<span>austinkocher</span></a></span> <span><a href=\"https://mastodon.social/@Gargron\" rel=\"noopener noreferrer\">@<span>Gargron</span></a></span></p><p>Your honour is intact.</p>", vec![]),
+            ]),
+        ])
     };
 
     let tmpl = env.get_template("thread.html").unwrap();
