@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod clean_html;
 mod get_thread;
 
 use axum::{
