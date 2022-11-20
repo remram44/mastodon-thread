@@ -2,6 +2,10 @@
 name = "mastodon-thread"
 version = "0.1.0"
 edition = "2021"
+authors = ["Remi Rampin <remi@rampin.org>"]
+description = "Renders an ActivityPub thread as a tree"
+repository = "https://github.com/remram44/mastodon-thread"
+homepage = "https://github.com/remram44/mastodon-thread"
 
 [dependencies]
 axum = "0.5.17"

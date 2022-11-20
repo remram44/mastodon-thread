@@ -29,6 +29,7 @@ async fn main() {
     let env = Arc::new(env);
 
     let client = reqwest::Client::builder()
+        .user_agent(format!("{} (+{})", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_HOMEPAGE")))
         .timeout(Duration::new(10, 0))
         .build().unwrap();
 
