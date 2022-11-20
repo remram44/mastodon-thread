@@ -4,9 +4,13 @@
 <ul class="thread">
   <li class="thread"><div class="message">{{ thread.toot.message |safe }}</div><ul class="thread">
 {% for subthread in thread.children recursive %}
-  <li class="thread"><div class="message">{{ subthread.toot.message |safe }}</div><ul class="thread">
-    {{ loop(subthread.children) }}
+  {% if subthread.Thread %}
+  <li class="thread"><div class="message">{{ subthread.Thread.toot.message |safe }}</div><ul class="thread">
+    {{ loop(subthread.Thread.children) }}
   </ul></li>
+  {% else %}
+  <li class="thread">MISSING</li>
+  {% endif %}
 {% endfor %}
   </ul></li>
 </ul>

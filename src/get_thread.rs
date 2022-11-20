@@ -33,7 +33,13 @@ impl From<ActivityPubToot> for Toot {
 #[derive(Serialize)]
 pub struct Thread {
     pub toot: Toot,
-    pub children: Vec<Arc<Mutex<Thread>>>,
+    pub children: Vec<Reply>,
+}
+
+#[derive(Serialize)]
+pub enum Reply {
+    Missing,
+    Thread(Arc<Mutex<Thread>>),
 }
 
 pub async fn load_thread(client: reqwest::Client, target_url: &str) -> Result<Arc<Mutex<Thread>>, Error> {
@@ -73,6 +79,35 @@ pub async fn load_thread(client: reqwest::Client, target_url: &str) -> Result<Ar
     Ok(thread)
 }
 
+async fn load_reply(client: reqwest::Client, item: serde_json::Value) -> Result<Arc<Mutex<Thread>>, Error> {
+    // Get the replies URL
+    let new_replies = item
+        .get("replies")
+        .and_then(|r| r.get("first"))
+        .and_then(|r| r.get("next"));
+    let new_replies = match new_replies {
+        Some(serde_json::Value::String(s)) => Some(s.to_owned()),
+        _ => None,
+    };
+
+    let item: ActivityPubToot = match serde_json::from_value(item) {
+        Ok(i) => i,
+        Err(_) => panic!(),
+    };
+
+    // Create new entry
+    let new_thread = Arc::new(Mutex::new(Thread {
+        toot: item.into(),
+        children: Vec::new(),
+    }));
+
+    // Fill it recursively
+    if let Some(new_replies) = new_replies {
+        load_replies(client.clone(), new_thread.clone(), new_replies).await?;
+    }
+    Ok(new_thread)
+}
+
 #[async_recursion]
 async fn load_replies(
     client: reqwest::Client,
@@ -97,38 +132,20 @@ async fn load_replies(
 
         for item in items {
             eprintln!("Reading item");
-            let new_thread = if let serde_json::Value::String(url) = item {
+            let reply: Result<Arc<Mutex<Thread>>, Error> = if let serde_json::Value::String(url) = item {
                 // Load thread from toot
-                load_thread(client.clone(), &url).await?
+                load_thread(client.clone(), &url).await
             } else {
-                // Get the replies URL
-                let new_replies = item
-                    .get("replies")
-                    .and_then(|r| r.get("first"))
-                    .and_then(|r| r.get("next"));
-                let new_replies = match new_replies {
-                    Some(serde_json::Value::String(s)) => Some(s.to_owned()),
-                    _ => None,
-                };
+                load_reply(client.clone(), item).await
+            };
 
-                let item: ActivityPubToot = serde_json::from_value(item)?;
-
-                // Create new entry
-                let new_thread = Arc::new(Mutex::new(Thread {
-                    toot: item.into(),
-                    children: Vec::new(),
-                }));
-
-                // Fill it recursively
-                if let Some(new_replies) = new_replies {
-                    load_replies(client.clone(), new_thread.clone(), new_replies).await?;
-                }
-
-                new_thread
+            let reply = match reply {
+                Ok(t) => Reply::Thread(t),
+                Err(_) => Reply::Missing,
             };
 
             // Insert into parent
-            thread.lock().unwrap().children.push(new_thread);
+            thread.lock().unwrap().children.push(reply);
         }
 
         match res.get("next") {
