@@ -82,7 +82,7 @@ async fn load_replies(
     loop {
         eprintln!("Getting page of replies {}", replies_page_url);
         let mut res = client
-            .get(replies_page_url)
+            .get(&replies_page_url)
             .header(reqwest::header::ACCEPT, "application/json")
             .send()
             .await?
@@ -132,7 +132,13 @@ async fn load_replies(
         }
 
         match res.get("next") {
-            Some(serde_json::Value::String(url)) => replies_page_url = url.to_owned(),
+            Some(serde_json::Value::String(url)) => {
+                if url == &replies_page_url {
+                    // Work around buggy servers
+                    break;
+                }
+                replies_page_url = url.to_owned()
+            }
             _ => break,
         }
     }
