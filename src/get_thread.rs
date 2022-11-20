@@ -24,7 +24,7 @@ impl From<ActivityPubToot> for Toot {
         Toot {
             url: toot.id,
             author: toot.attributed_to,
-            message: toot.content,
+            message: ammonia::clean(&toot.content),
         }
     }
 }
