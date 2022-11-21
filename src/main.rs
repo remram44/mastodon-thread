@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-mod get_thread;
+mod thread;
 
 use axum::{
     extract::{Extension, Form, Query},
@@ -17,7 +17,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use get_thread::load_thread;
+use thread::load_thread;
 
 #[tokio::main]
 async fn main() {
@@ -126,7 +126,7 @@ async fn thread(
             ),
         }
     } else {
-        use get_thread::{Reply, Thread, Toot};
+        use thread::{Reply, Thread, Toot};
         use std::sync::Mutex;
         let f = |u: &str, a: &str, m: &str, c: Vec<Reply>| { Arc::new(Mutex::new(Thread {
             toot: Toot {
